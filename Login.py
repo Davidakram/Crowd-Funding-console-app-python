@@ -1,59 +1,238 @@
 import os
 import re
-from subprocess import check_output
+import psycopg2
 
-user = ''
+id = ''
+dbuser = "postgres"
+dbPassword = "david"
+dbname = "pythontask"
 
 
 def create_project():
-    print("please enter the project name")
-    projectName = input()
-    if f"{projectName}.txt" in os.listdir("/media/lenovo/E/ITI content/python/day3/{user}Projects".format(user=user)):
-        print("Project already exists")
-        create_project()
+    os.system("clear")
+
+    print("please enter the project title")
+    project_name = input()
+    while project_name == "":
+        print("Project name cannot be empty")
+        print("Please enter a valid project name")
+        project_name = input()
     else:
-        os.system(
-            f"cd {user}Projects && touch {projectName}.txt")
-        print(f"Project {projectName} was created successfully")
-        print("enter some details about the project")
-        details = input()
-        while details == "":
-            print("please enter details")
-            details = input()
+        connect = psycopg2.connect(
+            user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+        cursor = connect.cursor()
+        query_select_create = f"select projectname from projects where userid='{id}'"
+        cursor.execute(query_select_create)
+        connect.commit()
+        projects = cursor.fetchall()
+        for project in projects:
+            while project[0] == project_name:
+                print("Project name already exists")
+                print("Please enter another project name")
+                project_name = input()
+                while project_name == "":
+                    print("Project name cannot be empty")
+                    print("Please enter a valid project name")
+                    project_name = input()
+
+        print("please enter the project description")
+        project_description = input()
+        while project_description == "":
+            print("Project description cannot be empty")
+            print("Please enter a valid project description")
+            project_description = input()
         else:
-            print("please enter your predicted target")
-            target = input()
-            while not target.isnumeric():
-                print("please enter a number")
-                target = input()
+            print("Please enter the project target")
+            project_target = input()
+            while not project_target.isnumeric():
+                print("target must be a number")
+                print("Please enter a valid project target")
+                project_target = input()
             else:
-                projectFile = open(f"{user}Projects/{projectName}.txt", "w")
-                projectFile.write(
-                    f"--------------------{projectName}--------------------\n details:{details}\n target:{target}\n")
-                projectFile.close()
-                print(
-                    f"Project named {projectName} was created successfully :)")
-                exit()
+                try:
+                    connect = psycopg2.connect(
+                        user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+                    cursor = connect.cursor()
+                    query_project_insert = f"insert into projects(userid,projectname,target,projectdescription) values('{id}','{project_name}',{project_target},'{project_description}')"
+                    cursor.execute(query_project_insert)
+                    connect.commit()
+                    cursor.close()
+                    connect.close()
+                    print(
+                        f"Project named {project_name} was created successfully :)")
+                    Select_Option()
+                except Exception as e:
+                    print(e)
 
 
-def create_project_Directory():
-    if f"{user}Projects" not in os.listdir():
-        os.system("mkdir {user}Projects".format(user=user))
-        print(f"{user}Project Directory Created")
-        create_project()
+def delete_project():
+    os.system("clear")
 
+    print("please enter the project name you want to delete")
+    project_delete = input()
+    while project_delete == "":
+        print("Project name cannot be empty")
+        print("Please enter a valid project name")
+        project_delete = input()
     else:
-        print("Project Directory already exists")
-        print("do you want to create a new project inside your directory?")
-        answer = input()
-        while answer != "yes" and answer != "no":
-            print("please enter yes or no")
-            answer = input()
+        connection = psycopg2.connect(
+            user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+        dbcursor = connection.cursor()
+        query_select_delete = f"select projectname from projects where userid='{id}'"
+        dbcursor.execute(query_select_delete)
+        connection.commit()
+        allprojects = dbcursor.fetchall()
+        for project in allprojects:
+            if project[0] == project_delete:
+                query_delete = f"delete from projects where userid='{id}' and projectname='{project_delete}'"
+                dbcursor.execute(query_delete)
+                connection.commit()
+
+                print("project was deleted successfully")
+                dbcursor.close()
+                connection.close()
+                Select_Option()
         else:
-            if answer == "yes":
-                create_project()
-            else:
-                exit()
+            print("project not found")
+            delete_project()
+
+
+def view_All_Projects():
+    os.system("clear")
+
+    connection = psycopg2.connect(
+        user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+    dbcursor = connection.cursor()
+    query_view_all_projects = f"select * from projects where userid='{id}'"
+    dbcursor.execute(query_view_all_projects)
+    connection.commit()
+    Projects = dbcursor.fetchall()
+    for project in Projects:
+        print(project)
+    print(f"Total Projects: {len(Projects)}")
+    Select_Option()
+
+
+def update_project():
+    os.system("clear")
+
+    print("please enter the project name you want to update")
+    project_update = input()
+    while project_update == "":
+        print("Project name cannot be empty")
+        print("Please enter a valid project name")
+        project_update = input()
+    else:
+        connection = psycopg2.connect(
+            user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+        dbcursor = connection.cursor()
+        query_select_update = f"select projectname from projects where userid='{id}'"
+        dbcursor.execute(query_select_update)
+        connection.commit()
+        projects = dbcursor.fetchall()
+        for project in projects:
+            if project[0] == project_update:
+                print("choose from the following options")
+                print("1.update project name")
+                print("2.update project target")
+                print("3.update project description")
+                reply = input()
+                while reply != "1" and reply != "2" and reply != "3":
+                    print("please choose from the following options(1,2,3)")
+                    reply = input()
+                else:
+                    if reply == "1":
+                        print("enter the new project name")
+                        new_name = input()
+                        while new_name == "":
+                            print("Project name cannot be empty")
+                            print("Please enter a valid project name")
+                            new_name = input()
+                        else:
+                            for duplicate_project in projects:
+                                while duplicate_project[0] == new_name:
+                                    print("Project name already exists")
+                                    print("Please enter another project name")
+                                    new_name = input()
+                                    while new_name == "":
+                                        print("Project name cannot be empty")
+                                        print(
+                                            "Please enter a valid project name")
+                                        new_name = input()
+
+                            quere_update_project_name = f"update projects set projectname='{new_name}'where userid='{id}' and projectname='{project_update}'"
+                            dbcursor.execute(quere_update_project_name)
+                            connection.commit()
+                            dbcursor.close()
+                            connection.close()
+                            print("project name updated successfully")
+                            Select_Option()
+                    elif reply == "2":
+                        print("enter the new project target")
+                        new_target = input()
+                        while not new_target.isnumeric():
+                            print("target must be a number")
+                            print("Please enter a valid project target")
+                            new_target = input()
+                        else:
+                            query_update_project_target = f"update projects set target='{new_target}' where userid='{id}' and projectname='{project_update}'"
+                            dbcursor.execute(query_update_project_target)
+                            connection.commit()
+                            dbcursor.close()
+                            connection.close()
+                            print("project target updated successfully")
+                            Select_Option()
+                    else:
+                        print("enter the new project description")
+                        new_desc = input()
+                        while new_desc == "":
+                            print("Project description cannot be empty")
+                            print("Please enter a valid project description")
+                            new_desc = input()
+                        else:
+                            quere_update_project_desc = f"update projects set projectdescription='{new_desc}' where userid='{id}' and projectname='{project_update}'"
+                            dbcursor.execute(quere_update_project_desc)
+                            connection.commit()
+                            dbcursor.close()
+                            connection.close()
+                            print("project description updated successfully")
+                            Select_Option()
+        else:
+            print("project not found")
+            update_project()
+
+            # query_update=f"update projects set projectname='{project_update}' where userid='{id}'"
+
+
+def Select_Option():
+
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~choose one of the following options~~~~~~~~~~~~~~~~~~~~~~~")
+    print("1. Create a new project")
+    print("2. View all projects")
+    print("3. Delete a project")
+    print("4. Update a project")
+    print("5.login to another account")
+    print("6. Exit")
+    reply = input()
+    while reply != "1" and reply != "2" and reply != "3" and reply != "4" and reply != "5" and reply != "6":
+
+        print("please enter a valid option")
+        reply = input()
+    else:
+        if reply == "1":
+            create_project()
+        elif reply == "2":
+            view_All_Projects()
+        elif reply == "3":
+            delete_project()
+        elif reply == "4":
+            update_project()
+        elif reply == "5":
+            logining_in()
+        else:
+            print("Goodbye")
+            print("Thank you for using the project manager :)")
+            exit()
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -69,120 +248,43 @@ def logining_in():
         print("Please enter a valid email")
         email = input()
     else:
-        usersFile = open("Users.txt", "r")
-        users = usersFile.readlines()
-        for x in range(len(users)):
-            if users[x].split(":")[3] == email:
-                userPassword = users[x].split(":")[4]
-                userName = users[x].split(":")[1]
-                global user
-                user = userName
-                print("please enter your passsword")
-                enterpassword = input()
-                while not re.fullmatch(userPassword, enterpassword):
-                    print(" InCorrect Passsword & Please enter the correct password")
-                    enterpassword = input()
+
+        connection = psycopg2.connect(
+            user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+        dbcursor = connection.cursor()
+        query_select = "select useremail from usersdata "
+        dbcursor.execute(query_select)
+        connection.commit()
+
+        rec = dbcursor.fetchall()
+        for rec in rec:
+            if rec[0] == email:
+                query_select_id = "select id from usersdata where useremail = '" + \
+                    rec[0] + "'"
+                dbcursor.execute(query_select_id)
+                id_rec = dbcursor.fetchall()
+                global id
+                id = id_rec[0][0]
+
+                query_select_password = "select userpassword from usersdata where useremail = '" + \
+                    rec[0] + "'"
+                dbcursor.execute(query_select_password)
+                password_rec = dbcursor.fetchall()
+                print("please enter your password: ")
+                passwd = input()
+                while not passwd == password_rec[0][0]:
+                    print("wrong password")
+                    print("please enter your password again: ")
+                    passwd = input()
                 else:
-                    os.system("clear")
-                    print(
-                        f"-------------------Welcome {userName}--------------------")
+                    print("Login Successful")
+                    Select_Option()
+                    dbcursor.close()
+                    connection.close()
 
-                    print("Have you done any projects before ?")
-                    answer = input()
-                    while answer != "yes" and answer != "no":
-                        print("please enter yes or no")
-                        answer = input()
-                    else:
-                        if answer == "yes":
+                    break
 
-                            if f"{user}Projects" not in os.listdir():
-                                print("there is no project directory for you ")
-                                print("do you want to create a new Directory")
-                                rep = input()
-                                while rep != "yes" and rep != "no":
-                                    print("enter yes or no")
-                                    rep = input()
-                                else:
-                                    if rep.lower() == "yes":
-                                        create_project_Directory()
-                                    else:
-                                        print("goodbye  :) ")
-                                        exit()
-                            else:
-
-                                print(
-                                    "do you want to list your projects or create a new project ?")
-                                reply = input()
-                                while reply != "create" and reply != "list":
-                                    print("enter list or create")
-                                    reply = input()
-                                else:
-                                    if reply.lower() == "create":
-                                        create_project()
-                                    else:
-                                        print("here are your previous projects")
-
-                                        os.system(f"cd {user}Projects && ls ")
-                                        print(
-                                            "do you want to delete a project or edit a project?")
-                                        gawab = input()
-                                        while gawab != 'delete' and gawab != 'edit':
-                                            print("enter delete or edit")
-                                            gawab = input()
-                                        else:
-                                            if gawab == "delete":
-                                                print(
-                                                    "enter the name of the prjoect you want to delete")
-                                                deleteproject = input()
-
-                                                while not f"{deleteproject}.txt" in os.listdir("/media/lenovo/E/ITI content/python/day3/{user}Projects".format(user=user)):
-                                                    print(
-                                                        f"no project named {deleteproject} was found")
-                                                    print("enter a right name")
-                                                    deleteproject = input()
-                                                else:
-                                                    os.system(
-                                                        f"cd {user}Projects && rm {deleteproject}.txt")
-                                            else:
-                                                print(
-                                                    "enter the name of the prjoect you want to edit")
-                                                editproject = input()
-                                                while not f"{editproject}.txt" in os.listdir("/media/lenovo/E/ITI content/python/day3/{user}Projects".format(user=user)):
-                                                    print(
-                                                        f"no project named {editproject} was found")
-                                                    print("enter a right name")
-                                                    editproject = input()
-                                                else:
-                                                    print(
-                                                        "enter some details about the project")
-                                                    details = input()
-                                                    while details == "":
-                                                        print(
-                                                            "please enter details")
-                                                        details = input()
-                                                    else:
-                                                        print(
-                                                            "please enter your predicted target")
-                                                        target = input()
-                                                        while not target.isnumeric():
-                                                            print(
-                                                                "please enter a number")
-                                                            target = input()
-                                                        else:
-                                                            edited = open(
-                                                                f"{user}Projects/{editproject}.txt", "w")
-                                                            edited.write(
-                                                                f"--------------------{editproject}--------------------\n details:{details}\n target:{target}\n")
-                                                            edited.close()
-                                                            print(
-                                                                f"Project named {editproject} was edited successfully :)")
-                                                            exit()
-
-                        else:
-                            create_project_Directory()
-
-                    usersFile.close()
-                break
+# //////////////////////////////////////////////////
         else:
             print("Invalid email or password")
             logining_in()

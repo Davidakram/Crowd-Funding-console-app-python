@@ -1,8 +1,10 @@
 import re
-import time
 import os
-check = open("Users.txt", "r")
-users = check.readlines()
+import psycopg2
+
+dbuser = "postgres"
+dbPassword = "david"
+dbname = "pythontask"
 
 
 def validatingUserName():
@@ -14,13 +16,7 @@ def validatingUserName():
         print("Please enter a valid name")
         name = input()
     else:
-
-        for x in range(len(users)):
-            while users[x].split(":")[1] == name:
-                print(f"{name} is already taken  ")
-                print("enter a new name")
-                name = input()
-    return name
+        return name
 
 
 userName = validatingUserName()
@@ -34,13 +30,7 @@ def validatingLastName():
         print("Please enter a valid last name")
         lastName = input()
     else:
-        for x in range(len(users)):
-            while users[x].split(":")[2] == lastName:
-                print(f"{lastName} is already taken  ")
-                print("enter a new last name")
-                lastName = input()
-
-    return lastName
+        return lastName
 
 
 Lastname = validatingLastName()
@@ -55,15 +45,21 @@ def validatingEmail():
         print("Please enter a valid email")
         email = input()
     else:
+        connection = psycopg2.connect(
+            user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+        dbcursor = connection.cursor()
+        query_select = "select useremail from usersdata "
+        dbcursor.execute(query_select)
+        connection.commit()
 
-        for x in range(len(users)):
-
-            while users[x].split(":")[3] == email:
-                print(f"{email} is already registered ")
-                print("enter a new email")
+        rec = dbcursor.fetchall()
+        for rec in rec:
+            while rec[0] == email:
+                print("Email already exists")
+                print("Please enter a different email")
                 email = input()
 
-    return email
+        return email
 
 
 userEmail = validatingEmail()
@@ -114,19 +110,20 @@ def validatingPhoneNumber():
                 phoneNumber = input()
             else:
 
-                for x in range(len(users)):
-                    while phoneNumber in users[x].split(":")[5][2:]:
-                        print(f"{phoneNumber} is already taken  ")
-                        print("enter a new phone number")
-                        phoneNumber = input()
-
-            return f"+2{phoneNumber}"
+                return phoneNumber
 
 
 mobileNumber = validatingPhoneNumber()
-id = round(time.time())
-usersFile = open("Users.txt", "a")
-usersFile.write(
-    f"{id}:{userName}:{Lastname}:{userEmail}:{userPassword}:{mobileNumber}\n")
-usersFile.close()
-os.system("python3 Login.py")
+
+try:
+    connection = psycopg2.connect(
+        user=dbuser, password=dbPassword, host="127.0.0.1", port="5432", database=dbname)
+    dbcursor = connection.cursor()
+    query_insert = f"insert into usersdata(username,lastname,useremail,userpassword,usermobile) values('{userName}','{Lastname}','{userEmail}','{userPassword}',{mobileNumber}) "
+    dbcursor.execute(query_insert)
+    connection.commit()
+    dbcursor.close()
+    connection.close()
+    os.system("python3 Login.py")
+except Exception as error:
+    print(error)
